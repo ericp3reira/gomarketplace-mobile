@@ -25,12 +25,22 @@ interface CartContext {
 
 const CartContext = createContext<CartContext | null>(null);
 
+const cartStorageKeys = {
+  products: 'GoMarketplace::products',
+};
+
 const CartProvider: React.FC = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
+      const storedProducts = await AsyncStorage.getItem(
+        cartStorageKeys.products,
+      );
+
+      if (storedProducts) {
+        setProducts(JSON.parse(storedProducts));
+      }
     }
 
     loadProducts();
@@ -46,6 +56,11 @@ const CartProvider: React.FC = ({ children }) => {
 
         setProducts(newProducts);
       }
+
+      AsyncStorage.setItem(
+        cartStorageKeys.products,
+        JSON.stringify(newProducts),
+      );
     },
     [products],
   );
@@ -61,6 +76,11 @@ const CartProvider: React.FC = ({ children }) => {
         newProducts[index].quantity -= 1;
       }
       setProducts(newProducts);
+
+      AsyncStorage.setItem(
+        cartStorageKeys.products,
+        JSON.stringify(newProducts),
+      );
     },
     [products],
   );
@@ -70,7 +90,14 @@ const CartProvider: React.FC = ({ children }) => {
       const existentProduct = products.find(item => item.id === product.id);
 
       if (!existentProduct) {
-        setProducts(state => [...state, { ...product, quantity: 1 }]);
+        AsyncStorage.setItem(
+          cartStorageKeys.products,
+          JSON.stringify([...products, { ...product, quantity: 1 }]),
+        );
+
+        setProducts(state => {
+          return [...state, { ...product, quantity: 1 }];
+        });
       } else {
         increment(product.id);
       }
